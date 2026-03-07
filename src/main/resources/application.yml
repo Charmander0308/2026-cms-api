@@ -1,0 +1,92 @@
+## server
+server:
+  port: 8080
+  compression:
+    enabled: true
+    mime-types: application/json,text/html,text/plain,application/xml
+    min-response-size: 1024      # 1KB 미만 응답은 압축 생략
+  tomcat:
+    accept-count: 200            # NIO Acceptor 포화 시 대기 큐 크기
+    max-connections: 8192        # OS 레벨 최대 동시 연결 수
+    connection-timeout: 20000    # 20s: 비활성 연결 정리
+    threads:
+      max: 400                   # 가상 스레드 사용 시 플랫폼 스레드 기반 상한 (실질적 의미 감소)
+      min-spare: 10
+
+## spring
+spring:
+  application:
+    name: cms-api
+  h2:
+    console:
+      enabled: on
+  sql:
+    init:
+      mode: embedded
+      schema-locations: classpath:db/sql/h2-schema.sql
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:test
+    username: sa
+    password:
+    hikari:
+      pool-name: cms-api-pool
+      maximum-pool-size: 20          # DB 서버 처리 능력 기준 상한
+      minimum-idle: 5                # 항상 준비 상태로 유지할 최소 연결 수
+      connection-timeout: 5000       # 5s: 풀 포화 시 빠른 실패
+      idle-timeout: 300000           # 5min: 유휴 연결 반환
+      max-lifetime: 1800000          # 30min: 커넥션 강제 교체 (DB 타임아웃 방지)
+      keepalive-time: 120000         # 2min: 커넥션 유효성 유지 핑
+      validation-timeout: 3000       # 3s: 연결 검증 최대 대기
+      leak-detection-threshold: 60000  # 60s 이상 반환 안 된 커넥션 경고
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_batch_fetch_size: 100
+        jdbc:
+          batch_size: 50             # 단일 트랜잭션 내 최대 배치 쿼리 수
+        order_inserts: true          # INSERT 순서 정렬 → 배치 효율 극대화
+        order_updates: true          # UPDATE 순서 정렬 → 배치 효율 극대화
+        batch_versioned_data: true   # @Version 엔티티도 배치 UPDATE 허용
+        generate_statistics: false   # 운영 환경 통계 수집 비활성 (오버헤드 제거)
+  threads:
+    virtual:
+      enabled: on                    # Tomcat·@Async 모두 가상 스레드로 동작
+
+## p6spy
+decorator:
+  datasource:
+    p6spy:
+      enable-logging: on
+
+## jwt
+jwt:
+  secret: 8f4e2b1c9a6d3f7e5b8c0a2d4f6e1b3c9a8d7f5e0b2c4a6d1f3e9b7c5a0d2f4e #원래는 보안 상 분리, 과제 평가의 실행 편의를 고려함.
+  expiration: 86400000 # 24 hours (milliseconds)
+
+## springdoc (Swagger UI)
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method        # GET → POST → PUT → DELETE 순 정렬
+    tags-sorter: alpha               # 태그 알파벳 정렬
+    try-it-out-enabled: true         # "Try it out" 버튼 기본 활성화
+    display-request-duration: true   # 응답 시간 노출
+  api-docs:
+    path: /v3/api-docs
+  # springdoc 2.x 가 Spring Data 4 의 TypeInformation 를 호출하는 것을 방지
+  packages-to-scan: com.malgn.domain.auth.controller,com.malgn.domain.contents.controller
+  remove-broken-reference-definitions: false
+  override-with-generic-response: false
+
+## logging (패턴·어펜더 설정은 logback-spring.xml 에서 관리)
+logging:
+  charset:
+    console: UTF-8
+  level:
+    root: info
+    web: info
+    com.malgn: debug

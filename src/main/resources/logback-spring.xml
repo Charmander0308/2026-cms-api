@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- application.yml 의 spring.application.name 값을 읽어 로그에 표시한다 -->
+    <springProperty scope="context" name="APP_NAME" source="spring.application.name" defaultValue="cms-api"/>
+
+    <!-- ==================== 패턴 정의 ==================== -->
+    <property name="CONSOLE_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level ${PID} --- [%15.15t] %-40.40logger{39} :%06L : %m%n"/>
+    <property name="FILE_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level ${PID} --- [%15.15t] %-40.40logger{39} :%06L : %m%n"/>
+    <property name="ACCESS_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level : %m%n"/>
+
+    <!-- ==================== 콘솔 어펜더 ==================== -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${CONSOLE_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- ==================== 애플리케이션 파일 어펜더 ==================== -->
+    <!-- 일별 롤링 + 파일 크기 초과 시 분할, 30일 보관, 총 3GB 제한 -->
+    <appender name="APP_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/app.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>logs/app.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>3GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${FILE_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- ==================== API 접근 로그 파일 어펜더 ==================== -->
+    <!-- 일별 롤링 + 파일 크기 초과 시 분할, 90일 보관, 총 5GB 제한 -->
+    <appender name="ACCESS_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/access.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>logs/access.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>90</maxHistory>
+            <totalSizeCap>5GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${ACCESS_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- ==================== 비동기 래퍼 (I/O 블로킹 방지) ==================== -->
+    <appender name="ASYNC_APP_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>1024</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <appender-ref ref="APP_FILE"/>
+    </appender>
+
+    <appender name="ASYNC_ACCESS_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>2048</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <appender-ref ref="ACCESS_FILE"/>
+    </appender>
+
+    <!-- ==================== ACCESS 전용 로거 ==================== -->
+    <!-- additivity=false: 루트 로거로 전파하지 않아 APP_FILE 에는 기록되지 않는다 -->
+    <!-- 접근 로그는 감사 목적상 즉시 기록이 필요하므로 동기 어펜더를 사용한다 -->
+    <logger name="ACCESS" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ACCESS_FILE"/>
+    </logger>
+
+    <!-- ==================== 루트 로거 ==================== -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC_APP_FILE"/>
+    </root>
+
+    <!-- ==================== 노이즈 억제 (전 프로파일 공통) ==================== -->
+    <!-- 정적 리소스 탐색 실패(NoResourceFoundException) 로그 제거 -->
+    <logger name="org.springframework.web.servlet.resource" level="WARN"/>
+    <!-- H2 콘솔 접근 로그 제거 -->
+    <logger name="org.h2" level="WARN"/>
+    <!-- Security FilterChain 상세 추적 로그 제거 -->
+    <logger name="org.springframework.security" level="WARN"/>
+    <!-- HikariCP 커넥션 풀 생성·반환 로그 제거 -->
+    <logger name="com.zaxxer.hikari" level="WARN"/>
+    <!-- Tomcat 내부 로그 제거 -->
+    <logger name="org.apache.catalina" level="WARN"/>
+    <logger name="org.apache.tomcat" level="WARN"/>
+
+    <!-- ==================== 프로파일별 로그 레벨 ==================== -->
+    <springProfile name="default,local">
+        <logger name="com.malgn" level="DEBUG"/>
+        <logger name="org.springframework.web" level="INFO"/>
+        <logger name="org.hibernate.SQL" level="DEBUG"/>
+    </springProfile>
+
+    <springProfile name="prod">
+        <logger name="com.malgn" level="INFO"/>
+        <logger name="org.springframework.web" level="WARN"/>
+        <logger name="org.hibernate.SQL" level="WARN"/>
+    </springProfile>
+
+</configuration>

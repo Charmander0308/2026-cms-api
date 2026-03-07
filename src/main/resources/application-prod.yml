@@ -1,0 +1,52 @@
+## =====================================================================
+## 운영(prod) 프로파일 전용 설정
+## 실행: java -jar cms-api.jar --spring.profiles.active=prod
+## =====================================================================
+
+## 운영 DB 커넥션 풀 — 실제 DB 서버 스펙에 맞게 조정
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 50          # 운영 DB 최대 허용 연결 수 기준 설정
+      minimum-idle: 10
+      connection-timeout: 3000       # 3s: 운영은 더 엄격하게 fail-fast
+      leak-detection-threshold: 30000  # 30s 이상 미반환 커넥션 경고
+
+  ## p6spy SQL 로깅 비활성화 (운영 환경 오버헤드 제거)
+  ## p6spy 는 모든 SQL 을 가로채 로깅하므로 처리량에 영향을 준다
+  datasource-decorator:
+    exclude-beans: dataSource
+
+## p6spy 비활성화
+decorator:
+  datasource:
+    p6spy:
+      enable-logging: off
+    excludes: dataSource
+
+## 운영 로그 레벨 — SQL 및 디버그 로그 비활성화
+logging:
+  level:
+    root: warn
+    com.malgn: info
+    org.hibernate.SQL: warn
+    org.hibernate.orm.jdbc.bind: warn
+
+## 운영 서버 압축 — 더 적극적으로 압축 적용
+server:
+  compression:
+    min-response-size: 512           # 512B 이상이면 압축
+
+## Swagger UI — 운영 환경에서 비활성화 (API 스펙 노출 방지)
+springdoc:
+  swagger-ui:
+    enabled: false
+  api-docs:
+    enabled: false
+
+## Actuator — 운영에서는 최소 엔드포인트만 노출
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
