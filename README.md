@@ -52,7 +52,7 @@ java -jar build/libs/cms-api-0.0.1-SNAPSHOT.jar --spring.profiles.active=prod
 | 커넥션 풀 | HikariCP 7.0.2 — 가상 스레드 ThreadFactory 적용, 풀 파라미터 정밀 튜닝 |
 | 응답 압축 | Tomcat 내장 Gzip — 1KB 이상 JSON 응답 자동 압축 |
 | 테스트 | `spring-security-test` — MockMvc + Spring Security 통합 테스트 |
-| API 문서 | `springdoc-openapi-starter-webmvc-ui:2.8.5` — Swagger UI (운영 환경에서 자동 비활성화) |
+| API 문서 | `springdoc-openapi-starter-webmvc-ui:3.0.2` — Swagger UI (운영 환경에서 자동 비활성화) |
 
 ### 로그인 방식
 
