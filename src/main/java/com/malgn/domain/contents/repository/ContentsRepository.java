@@ -5,13 +5,16 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 public interface ContentsRepository extends JpaRepository<Contents, Long> {
 
+    @Transactional
     @Modifying(clearAutomatically = true)
     @Query("UPDATE Contents c SET c.viewCount = c.viewCount + 1 WHERE c.id = :id")
     void incrementViewCount(@Param("id") Long id);
 
+    @Transactional
     @Modifying
     @Query("DELETE FROM Contents c WHERE c.id = :id")
     void hardDeleteById(@Param("id") Long id);

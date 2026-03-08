@@ -10,9 +10,9 @@ create table users
     deleted_at         timestamp
 );
 
--- 활성 사용자(deleted_at IS NULL)에 대해서만 username 중복을 막는 부분 유니크 인덱스
--- 소프트 삭제된 사용자의 username은 재사용 가능
-create unique index uk_users_username_active on users(username) where deleted_at is null;
+-- H2는 부분 인덱스(WHERE 절)를 지원하지 않으므로 일반 유니크 인덱스 사용
+-- 운영 환경(PostgreSQL 등)에서는 "WHERE deleted_at IS NULL" 부분 인덱스 권장
+create unique index uk_users_username on users(username);
 
 -- 콘텐츠 테이블
 create table contents
