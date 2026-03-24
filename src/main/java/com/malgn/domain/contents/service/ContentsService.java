@@ -7,6 +7,7 @@ import com.malgn.domain.contents.dto.ContentsResponse;
 import com.malgn.domain.contents.dto.ContentsUpdateRequest;
 import com.malgn.domain.contents.entity.Contents;
 import com.malgn.domain.contents.repository.ContentsRepository;
+import com.malgn.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +22,7 @@ import java.time.LocalDateTime;
 public class ContentsService {
 
     private final ContentsRepository contentsRepository;
+    private final UserRepository userRepository;
 
     @Transactional
     public ContentsResponse createContents(ContentsCreateRequest request, String username) {
@@ -35,13 +37,15 @@ public class ContentsService {
     }
 
     public Page<ContentsResponse> getContentsList(Pageable pageable) {
-        return contentsRepository.findAll(pageable).map(ContentsResponse::from);
+        return contentsRepository.findAllByActiveUsers(pageable).map(ContentsResponse::from);
     }
 
     // 특정 콘텐츠를 조회하고 조회수를 1 증가시킨 뒤 결과를 반환한다
     @Transactional
     public ContentsResponse getContentsDetail(Long id) {
         Contents contents = findById(id);
+        userRepository.findByUsername(contents.getCreatedBy())
+                .orElseThrow(() -> new BusinessException(ErrorCode.ACCESS_DENIED));
         contentsRepository.incrementViewCount(id);
         // DB 업데이트 후 응답에 반영 (incrementViewCount로 DB는 +1됨)
         contents.setViewCount(contents.getViewCount() + 1);
